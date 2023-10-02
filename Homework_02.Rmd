@@ -1,0 +1,378 @@
+---
+title: "Econometrics 2023"
+subtitle: "Final homework"
+author: "Boyko Amarov"
+date: "14/06/2023"
+output: html_document
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+# Instructions
+
+1. Write your student ids and names in the group members section
+    below. Please follow the template there and write the student ids
+    and the names of each team member on a separate line.
+    Replace 00000 with your actual student id, FirstName with your
+    actual first name, and LastName with your actual last name. Remove
+    the unnecessary lines if your team has less than five members.
+
+2. You can write your answers in Bulgarian, English, or German. Your choice of language is not relevant to the grading.
+
+3. Please write your answers beneath each question, and please *do not
+    remove the original questions* from the solution.
+
+4. Please, do not alter the data loading chunk (the first one in the
+    code).
+
+5. Write your code in chunks so I can run it and reproduce your results.
+
+6. Write the free-text answers outside of the code chunks, and do not
+    use # (it serves to write comments in the code, but it renders as a
+    heading in HTML).
+
+7. Compile your homework (press the knit button: top left in R-Studio)
+    to make sure that the code runs without errors and that it shows
+    your solution. *Homework with broken code or answers that
+    cannot be reproduced will not be graded!*
+
+8. Latex math syntax is not required for your solution. Just write your answers as free text.
+
+9. To submit your solution, open your [homework GitHub
+    repository](https://classroom.github.com/a/TLpH3lT8) and click on
+    the original assignment file. Find the pencil icon
+    (top right) and click on it. The file should be in edit mode now, so
+    you can copy your solution from R-Studio and paste it into the
+    GitHub page. Make sure that you paste the **source code** into
+    GitHub (i.e., make sure that R studio is in "Source" mode (top left
+    button in R Studio) when you copy your work. Finally, click the
+    green "Commit" button (top right) to save your solution in the
+    repository.
+
+
+10. Do not create new files in the GitHub repository. In the end, the
+    repository must contain only **one** `Rmd` file.
+
+11. Verify that your solution is uploaded correctly. Open the assignment
+    file in GitHub again, and make sure that it contains your solution.
+
+11. If you have questions about the homework, please write me an email
+    [boyko.amarov\@gmail.com](mailto:boyko.amarov@gmail.com).
+
+12. You will need the `tidyverse` and `caret` packages. To install them,
+remove the comment character "#" before the `install.packages` function in the first code chunk and run it. After the packages are installed, put back the comment character so that the `install.packages` line appears in green.
+
+
+
+# Team members
+
+701322 Kiril Tanev
+825268 Subin Cho
+
+# Data
+
+The `usedcars` data set contains actual data about used cars advertised for sale on a popular US website in 2012.
+
+- `year` (numeric): Manufacturing year 
+- `price` (numeric) : Sales price in USD 
+- `mileage` (numeric) : Mileage of the cars in miles.
+- `color` (character): e.g. "Yellow", "Gray", etc.
+- `transmission` (character): "AUTO": automatic transmission, "MANUAL": manual transmission
+
+```{r}
+# install.packages(c("tidyverse", "caret"))
+
+library(tidyverse)
+library(caret)
+
+usedcars <- read_csv("https://raw.githubusercontent.com/feb-sofia/econometrics-2023/main/data/usedcars.csv") %>%
+ select(-model)
+```
+
+
+# Problem 1
+
+1. (1 pt) How many cars with automatic transmissions are in the data set?
+
+Answer 1: There are 128 cars with Automatic transmission
+```{r}
+table(usedcars$transmission)
+```
+
+2. (1 pt) Visualize the distributions of the sales price by transmission type using a box plot. What patterns can you see in the box plot?
+```{r}
+plot1 <- ggplot(usedcars, aes(x = transmission, y = price)) + geom_boxplot() + theme_classic()
+plot1 <- plot1 + xlab("Transmission") + ylab("Sales Price (Dollars") + ggtitle("Distribution of Sales price to transmission type")
+plot1
+```
+// PT -0.5: missing discussion
+
+3. (1 pt) Create a new variable in the data set named `is_manual` that
+    equals one if the car had a manual transmission and is zero otherwise. *Hint*: Use  the `mutate` and `ifelse` functions.
+
+```{r}
+usedcars <- usedcars %>% 
+            mutate(is_manual = ifelse(transmission == "MANUAL", 1, 0))
+head(usedcars)       
+```
+
+4. (1 pt) Fit a linear regression model for the sales price that contains
+    the `is_manual` variable and a constant.
+```{r}
+model1 <- lm(price~is_manual, data = usedcars)
+summary(model1)
+```
+
+$$
+\text{price}_i = \beta_0 + \beta_1 \text{is_manual}_i + e_i, e_i \sim N(0, \sigma^2)
+$$
+
+5. (2 pt) Write down the estimated regression equation.
+
+// NOTE: nice!
+
+$$
+\text{price}_i = 13092.9 -893.1*\text{is_manual}_i
+$$
+
+6. (4 pt) Interpret the estimated coefficients (intercept and slope)
+    *in the data context* (generic answers are not sufficient).
+
+Answer 6 - The estimated fixed price of car is $13092.9
+          The estimated fixed price of a car reduces by $893.1 if the car has manual transmission
+          
+// PT -5: not clear what a "fixed" price might mean here. The intercept is the average price of cars with automatic transmission, the slope is the estimated average price difference between manual/automatic transmission cars.
+
+7. (4 pt) A car salesperson claims that cars with an automatic transmission cost 1,000 USD more
+    (on average) than cars with manual transmissions. Express this
+    statement in terms of the model coefficients and test this
+    hypothesis by computing the p-value of the test. Explain your
+    decision to reject (or not) the null hypothesis at a 95 percent significance level (5 percent probability of rejecting a true null hypothesis).
+
+Answer 7 - The variable is_manual takes a value of 0 when the car has automatic transmission, while it takes a value of 1 with manual transmission. Thus, in terms of the model developed earlier when is_manual = 0, we get the estimated price of a car with automatic transmission. On the other hand, when is_manual = 1, the estimated price for manual transmission. Based on the assumption of the sales person, the price of a car with automatic transmission us $1000 more than with manual transmission. 
+
+Null Hypothesis: $\beta_1$ = 1000
+Alternate Hypothesis: $\beta_1\neq$ 1000
+
+```{r}
+t_obs <- (893.1-1000)/719.4 # observed t statistic
+pt(t_obs, df=150-2, lower.tail = F) # p-value
+```
+
+Since the p-value of the one sided test statistics >0.05 hence we do not have evidence against the Null Hypothesis. Thus we accept the Null Hypothesis. 
+Therefore it can be inferred that the mean price of a car with automatic transmission is $1000 more than that with manual transmission. 
+
+
+8. (2 pt) Compute a 90 percent confidence interval for the expected
+    sales price of cars with an automatic transmission.
+    
+// NOTE: this is a complicated way to get a conf. int. for the intercept...
+
+```{r}
+new_car <- data.frame(is_manual = 0)
+expected_price <- predict(model1, newdata = new_car, interval = "confidence", level = 0.90)
+expected_price
+```
+
+9. (2 pt) Using the model, predict the probability that a car with an automatic transmission
+    will cost more than 15,000 USD. _Hint_: Use the estimated mean and residual standard deviation
+    together with the `pnorm` function.
+
+```{r}
+
+1- pnorm(expected_price, mean = 15000, sd =3117 )
+```
+
+Answer 9 - The probability that a car with automatic transmission will cost more than $15000 is 0.73
+
+# Problem 2
+
+1. (2 pt) Create a scatter-plot for `mileage` and `price` and distinguish
+    the transmission type by color. *Hint*: Map the `transmission` variable to
+    the `color` aesthetic in `aes`. What pattern of association between
+    `mileage` and `price` can you see?
+    
+```{r}
+plot2 <- ggplot(usedcars, aes(x=mileage, y=price, shape=transmission, color=transmission)) +  geom_point()
+plot2 <- plot2 + xlab("Mileage") + ylab("Price") + ggtitle("Relation of Mileage to Price")
+plot2 <- plot2 + theme_classic()
+plot2
+```
+
+2. (1 pt) Fit the following regression model to the `usedcars` data
+    set.
+```{r}
+model2 <- lm(price~is_manual + mileage, data = usedcars)
+summary(model2)
+```
+
+
+$$
+\text{price}_i = \beta_0 + \beta_1 \text{is_manual}_i + \beta_2 \text{mileage}_i + e_i, e_i \sim N(0, \sigma^2)
+$$
+the model can be represented by the equation 
+$$
+\text{price}_i = 17230 -914.8 \text{is_manual}_i -0.09333 \text{mileage}_i
+$$
+
+
+3. (6 pt) Interpret the model coefficients *in the context of the data*
+    (generic descriptions like intercept or slopes are not sufficient).
+
+Answer 3 - The estimated fixed price of a car is $17230
+          The estimated fixed price of a car reduces by $914.8 if the car has manual transmission, while all cars have similar mileage           
+          The estimated fixed price of a car reduces by $0.09333 for additional increase of one mile of the car, with fixed transmission   
+
+// PT -3: again, totally unclear what fixed might mean. Furthermore, the model
+shows you difference between cars, there are no increases/decreases of mileage...
+          
+4. (4 pt) Plot the model predictions together with 87 percent
+    confidence intervals for the observed values of `mileage` and `is_manual`
+    in the `usedcars` data set. *Hints*: Use the `predict` function to
+    calculate the predictions and merge its output (`bind_cols`) with
+    the `usedcars` data set. Use `geom_ribbon` to visualize the
+    confidence intervals.
+
+// PT -1: there should be two lines in the plot
+
+```{r}
+new_car2 <- data.frame(is_manual = usedcars$is_manual, mileage = usedcars$mileage)
+expected_price2 <- predict(model2, newdata = new_car2, interval = "confidence", level = 0.87) 
+usedcars <- bind_cols(usedcars, expected_price2)
+
+plot3 <- ggplot(usedcars, aes(x =price, y=fit)) + geom_point()+
+geom_ribbon(aes(ymin = lwr, ymax = upr), fill = "grey70") +geom_line(aes(y=fit))+ theme_classic()
+plot3 <- plot3 + xlab("Actual price") + ylab("Predicted Price") + ggtitle("Relation of predicted price to Actual price")
+plot3 
+```
+
+
+5. (3 pt) Reformulate the model so that the intercept estimates the
+    expected sales price of a car with a manual transmission and average mileage. Calculate a 93
+    percent confidence interval for the expected price of such a
+    car.
+    
+// PT -2: missing model formulation
+    
+```{r}
+m1 = mean(usedcars$mileage)
+new_car2 <- data.frame(is_manual = 1, mileage=m1)
+predict(model2, newdata = new_car2, interval = "confidence", level = 0.93)
+```
+
+6. (6 pt) An car salesperson claims that the expected sales price difference
+    between two cars that differ by 1,000 miles mileage (given they have the same transmission type) is 100 USD.          Express this hypothesis in terms of the model coefficients and test it against a two-sided
+    alternative. Compute the critical values of the test and explain
+    your decision to reject (or not) the null hypothesis at a 97 percent
+    significance level.
+
+Answer 6 - 
+Null Hypothesis: $\beta$ = 100
+Alternate Hypothesis $\beta\neq$ 100
+
+According to the model the coefficient of mileage = 0.09333
+Hence, a car travelling 1000 miles the value would be 1000*0.09333 = 93.33
+```{r}
+t_obs <- (93.331-100)/0.00556 # observed t statistic
+t_obs
+pt(t_obs, df=150-2) # p-value
+```
+
+// PT -2: wrong scale
+
+The value of t-crit is -1199.46
+Since, p-value of the test is < 0.05, hence there is evidence to reject the Null Hypothesis.Thus the Null hypothesis is rejected. 
+Thus, it can be interpreted that the sale price of a car with a milleage of 1000 does not differ by $100. 
+
+7. (3 pt) Expand the model by including dummy (0/1) variables for the
+    color of the cars (variable `color`). Which category serves as a reference?
+    *Hint*: The dummy variables are automatically created within `lm`. Just include the `color` variable in the model formula.
+
+$$
+\text{price}_i = \beta_0 + \beta_1 \text{is_manual}_i + \beta_2 \text{mileage}_i + \\ \beta_4 \text{color_blue}_i + \beta_5 \text{color_gold}_i + \beta_6 \text{color_gray}_i + \beta_7 \text{color_green}_i + \\ \beta_8 \text{color_red}_i +\beta_9 \text{color_silver}_i + \beta_{10} \text{color_white}_i + \beta_{11} \text{color_yellos}_i +   e_i, e_i \sim N(0, \sigma^2)
+$$
+
+```{r}
+model3 <- lm(price ~ is_manual+mileage + color, data = usedcars)
+summary(model3)
+```
+
+// PT -2: missing reference category
+
+8. (6 pt) Given the following hypothesis
+
+$$
+H_0: \beta_4 = \beta_5 = \beta_6 = \ldots = \beta_{11} = 0\\
+H_1: \text{at least one of these coefficients not equal to zero}
+$$
+
+-   (4 pt) Interpret the null hypothesis *in the context of the data*.
+-   (2 pt) Test this hypothesis using the `anova` function at a 92 percent
+    significance level (eight percent probability of rejecting a true
+    null hypothesis). Explain your decision to reject (or not) the null
+    hypothesis.
+```{r}
+model3.color <- lm(price ~  color, data = usedcars)
+anova(model3.color, model3)
+```
+
+Answer 8 - Based on the above model according to the Null hypothesis we would test that the price of car would not change with color of the car, given that two cars have the same transmission and mileage.
+
+Since the Significance of F-value is less than 0.08, hence we have evidence to reject the Null hypothesis. 
+Thus we accept the Alternate hypothesis. Hence, it can be inferred that price of a car does depend on the colour of the car.
+
+
+# Problem 3 (4 pt)
+
+Which of the following models has the lowest estimated test RMSE?
+*Hint*: Estimate the test prediction error using 10-fold
+cross-validation with ten repetitions.
+
+$$
+\text{price}_i = \beta_0 + \beta_1 \text{is_manual}_i + e_i, e_i \sim N(0, \sigma^2)
+$$
+
+
+
+$$
+\text{price}_i = \beta_0 + \beta_1 \text{is_manual}_i + \beta_2 \text{mileage}_i + e_i, e_i \sim N(0, \sigma^2)
+$$
+
+
+
+$$
+\text{price}_i = \beta_0 + \beta_1 \text{is_manual}_i + \beta_2 \text{mileage}_i + \\ \beta_4 \text{color_blue}_i + \beta_5 \text{color_gold}_i + \beta_6 \text{color_gray}_i + \beta_7 \text{color_green}_i + \\ \beta_8 \text{color_red}_i +\beta_9 \text{color_silver}_i + \beta_{10} \text{color_white}_i + \beta_{11} \text{color_yellos}_i +   e_i, e_i \sim N(0, \sigma^2)
+$$
+```{r}
+# Model1
+set.seed(123)
+train.control <- trainControl(method = "repeatedcv", 
+                              number = 10, repeats = 10)
+# Train the model
+model <- train(price ~ is_manual, data = usedcars, method = "lm", trControl = train.control)
+# Summarize the results
+print(model)
+
+
+# Model2
+# Train the model
+model <- train(price ~ is_manual+mileage, data = usedcars, method = "lm", trControl = train.control)
+# Summarize the results
+print(model)
+
+# Model 3
+# Train the model
+model <- train(price ~ is_manual+mileage + color, data = usedcars, method = "lm", trControl = train.control)
+# Summarize the results
+print(model)
+```
+
+The model given by 
+$$
+\text{price}_i = \beta_0 + \beta_1 \text{is_manual}_i + \beta_2 \text{mileage}_i + e_i, e_i \sim N(0, \sigma^2)
+$$
+has the least RMSE. The RMSE = 1806.965.
+
+// POINTS 37.5
+// GRADE 5.0
