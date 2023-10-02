@@ -1,8 +1,7 @@
 # Econometrics-2023-Final-Homework
 
 Made by:
-Kiril Tanev
-Subin Cho
+Kiril Tanev and Subin Cho
 
 
 Subject:
@@ -15,4 +14,3 @@ Successful completion of the course
 
 Result:
 Success
-
